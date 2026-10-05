@@ -408,7 +408,7 @@ export default function Page() {
                     </span>
                   );
                 })()
-                : status}
+                : stockFishStatus}
             </p>
           </div>
         </div>
