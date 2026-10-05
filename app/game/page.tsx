@@ -480,7 +480,7 @@ export default function Page() {
             <p
               className={`${basic.className} text-slate-400 text-lg leading-relaxed`}
             >
-              {status === "Analysis complete"
+              {stockFishStatus === "Analysis complete"
                 ? (() => {
                   const cls = moveClassMap.get(currentStep - 1);
 
@@ -495,7 +495,7 @@ export default function Page() {
                     </span>
                   );
                 })()
-                : status}
+                : stockFishStatus}
             </p>
           </div>
         </div>
