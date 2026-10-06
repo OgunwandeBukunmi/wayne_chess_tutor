@@ -1,4 +1,5 @@
 ﻿import Groq from "groq-sdk";
+import sharp from "sharp"
 import { NextRequest, NextResponse } from "next/server";
 
 const groq = new Groq({
@@ -14,10 +15,16 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "No image provided." }, { status: 400 });
         }
 
-        const bytes = await image.arrayBuffer();
-        const base64 = Buffer.from(bytes).toString("base64");
+        const buffer = Buffer.from(await image.arrayBuffer());
+        const processedBuffer = await sharp(buffer)
+            .grayscale()
+            .linear(1.2, -10) // Increase contrast slightly
+            .toBuffer();
+
+        const base64 = processedBuffer.toString("base64");
         const mimeType = image.type || "image/png";
         const dataUrl = `data:${mimeType};base64,${base64}`;
+
         const prompt = `Extract all text and chess notation from this image and return the result in a JSON object.
 
 Rules:

@@ -370,7 +370,7 @@ export default function Page() {
             Desktop: right side */}
         <div
           id="avatar_tutor"
-          className="flex items-center gap-3 p-2 lg:hidden order-1"
+          className="md:hidden flex items-center gap-3 p-2 "
         >
           <div className="w-16 h-16 flex justify-center items-center shrink-0">
             <Image
@@ -455,9 +455,13 @@ export default function Page() {
 
         {/* DESKTOP TUTOR */}
 
+
+
+      </main>
+      <div className="flex flex-col">
         <div
           id="desktop_avatar_tutor"
-          className="hidden lg:flex items-center gap-4 p-4"
+          className="hidden md:flex items-center gap-4 p-4"
         >
           <div className="p-1 w-20 h-20 flex justify-center items-center shrink-0">
             <Image
@@ -487,7 +491,7 @@ export default function Page() {
                   return cls ? (
                     <span className="text-slate-300">
                       {explanations[currentStep - 1] ||
-                        "Generating explanation..."}
+                        "Problem getting explanation"}
                     </span>
                   ) : (
                     <span className="text-slate-500">
@@ -499,23 +503,22 @@ export default function Page() {
             </p>
           </div>
         </div>
-      </main>
 
-      {/* RIGHT SIDE ON DESKTOP
+        {/* RIGHT SIDE ON DESKTOP
           MOVES + CONTROLS */}
 
-      <main className="flex flex-col w-full max-w-xl gap-3 lg:gap-4">
+        <main className="flex flex-col w-full max-w-xl gap-3 lg:gap-4">
 
-        {/* MOVES */}
+          {/* MOVES */}
 
-        <div
-          id="moves_section"
-          className="p-0 order-3 lg:order-1"
-        >
           <div
-            ref={movesContainerRef}
-            id="move_text"
-            className="
+            id="moves_section"
+            className="p-0 order-3 lg:order-1"
+          >
+            <div
+              ref={movesContainerRef}
+              id="move_text"
+              className="
               w-full
               bg-slate-900/90
               backdrop-blur
@@ -535,9 +538,9 @@ export default function Page() {
               scrollbar-thin
               scrollbar-thumb-slate-700
             "
-          >
-            <div
-              className={`
+            >
+              <div
+                className={`
                 ${basic.className}
                 flex
                 flex-nowrap
@@ -551,114 +554,116 @@ export default function Page() {
                 lg:whitespace-normal
                 lg:leading-loose
               `}
-            >
-              {moves.map((move: any, i: number) => {
-                const isActive = currentStep === i + 1;
-                const isWhiteMove = i % 2 === 0;
-                const moveNumber = Math.floor(i / 2) + 1;
+              >
+                {moves.map((move: any, i: number) => {
+                  const isActive = currentStep === i + 1;
+                  const isWhiteMove = i % 2 === 0;
+                  const moveNumber = Math.floor(i / 2) + 1;
 
-                const cls = moveClassMap.get(i);
+                  const cls = moveClassMap.get(i);
 
-                const colorClass = cls
-                  ? classificationColor[cls] ?? "text-slate-300"
-                  : "text-slate-300";
+                  const colorClass = cls
+                    ? classificationColor[cls] ?? "text-slate-300"
+                    : "text-slate-300";
 
-                return (
-                  <span
-                    key={i}
-                    ref={(element) => {
-                      moveRefs.current[i] = element;
-                    }}
-                    className="inline-flex items-center shrink-0"
-                  >
-                    {isWhiteMove && (
-                      <span className="text-slate-500 select-none mr-1">
-                        {moveNumber}.
-                      </span>
-                    )}
-
+                  return (
                     <span
-                      className={`
+                      key={i}
+                      ref={(element) => {
+                        moveRefs.current[i] = element;
+                      }}
+                      className="inline-flex items-center shrink-0"
+                    >
+                      {isWhiteMove && (
+                        <span className="text-slate-500 select-none mr-1">
+                          {moveNumber}.
+                        </span>
+                      )}
+
+                      <span
+                        className={`
                         ${colorClass}
                         font-semibold
                         transition-all
                         duration-150
 
                         ${isActive
-                          ? "bg-slate-600 text-white ring-1 ring-slate-400 rounded px-1.5 py-0.5 shadow-md"
-                          : ""
-                        }
+                            ? "bg-slate-600 text-white ring-1 ring-slate-400 rounded px-1.5 py-0.5 shadow-md"
+                            : ""
+                          }
                       `}
-                      title={cls ?? undefined}
-                    >
-                      {move}
-                    </span>
+                        title={cls ?? undefined}
+                      >
+                        {move}
+                      </span>
 
-                    <span className="mx-1.5 text-slate-700">
-                      {" "}
+                      <span className="mx-1.5 text-slate-700">
+                        {" "}
+                      </span>
                     </span>
-                  </span>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* CONTROLS */}
+          {/* CONTROLS */}
 
-        <div
-          id="controls"
-          className="bg-slate-900/90 border border-slate-800 rounded-2xl p-2 shadow-lg order-4 lg:order-2"
-        >
-          <div className="flex flex-row w-full justify-center items-center gap-4 p-2 text-slate-400">
+          <div
+            id="controls"
+            className="bg-slate-900/90 border border-slate-800 rounded-2xl p-2 shadow-lg order-4 lg:order-2"
+          >
+            <div className="flex flex-row w-full justify-center items-center gap-4 p-2 text-slate-400">
 
-            <button
-              type="button"
-              onClick={Start}
-              className="p-2 hover:bg-slate-800 hover:text-white rounded-xl transition-all active:scale-95"
-            >
-              <HugeiconsIcon
-                icon={PreviousIcon}
-                stroke={"2"}
-              />
-            </button>
+              <button
+                type="button"
+                onClick={Start}
+                className="p-2 hover:bg-slate-800 hover:text-white rounded-xl transition-all active:scale-95"
+              >
+                <HugeiconsIcon
+                  icon={PreviousIcon}
+                  stroke={"2"}
+                />
+              </button>
 
-            <button
-              type="button"
-              onClick={Previous}
-              className="p-2 hover:bg-slate-800 hover:text-white rounded-xl transition-all active:scale-95"
-            >
-              <HugeiconsIcon
-                icon={ArrowLeft01Icon}
-                stroke={"2"}
-              />
-            </button>
+              <button
+                type="button"
+                onClick={Previous}
+                className="p-2 hover:bg-slate-800 hover:text-white rounded-xl transition-all active:scale-95"
+              >
+                <HugeiconsIcon
+                  icon={ArrowLeft01Icon}
+                  stroke={"2"}
+                />
+              </button>
 
-            <button
-              type="button"
-              onClick={Next}
-              className="p-2 hover:bg-slate-800 hover:text-white rounded-xl transition-all active:scale-95"
-            >
-              <HugeiconsIcon
-                icon={ArrowRight01Icon}
-                stroke={"2"}
-              />
-            </button>
+              <button
+                type="button"
+                onClick={Next}
+                className="p-2 hover:bg-slate-800 hover:text-white rounded-xl transition-all active:scale-95"
+              >
+                <HugeiconsIcon
+                  icon={ArrowRight01Icon}
+                  stroke={"2"}
+                />
+              </button>
 
-            <button
-              type="button"
-              onClick={End}
-              className="p-2 hover:bg-slate-800 hover:text-white rounded-xl transition-all active:scale-95"
-            >
-              <HugeiconsIcon
-                icon={NextIcon}
-                stroke={"2"}
-              />
-            </button>
+              <button
+                type="button"
+                onClick={End}
+                className="p-2 hover:bg-slate-800 hover:text-white rounded-xl transition-all active:scale-95"
+              >
+                <HugeiconsIcon
+                  icon={NextIcon}
+                  stroke={"2"}
+                />
+              </button>
 
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
+
     </section>
   );
 }
