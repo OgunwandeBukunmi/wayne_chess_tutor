@@ -21,7 +21,7 @@ type Evaluation =
     value: number;
   };
 
-type PositionAnalysis = {
+export type PositionAnalysis = {
   step: number;
   fen: string;
   evaluation: Evaluation | null;

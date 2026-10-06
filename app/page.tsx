@@ -85,8 +85,8 @@ export default function ChessOCRPage() {
 
         if (!moves.length) return;
         // console.log(moves)
-        sessionStorage.setItem("chess-game", JSON.stringify(moves));
-        sessionStorage.setItem("player-color", playerColor);
+        localStorage.setItem("chess-game", JSON.stringify(moves));
+        localStorage.setItem("player-color", playerColor);
         router.push("/game");
     }
 
