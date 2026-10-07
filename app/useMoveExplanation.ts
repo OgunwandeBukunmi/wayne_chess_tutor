@@ -35,6 +35,7 @@ export function useMoveExplanations(
     const [explanations, setExplanations] = useState<
         Record<number, string>
     >({});
+    const [shouldGenerate, setShouldGenerate] = useState<boolean>(true);
 
     const [status, setStatus] = useState<
         "idle" | "generating" | "complete" | "error" | "idle"
@@ -42,17 +43,37 @@ export function useMoveExplanations(
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!allow || stockFishError) {
+        if (status != "complete") return;
+
+        sessionStorage.setItem("ai-explanations", JSON.stringify(explanations));
+
+    }, [status])
+
+    useEffect(() => {
+        const storedExplanations = sessionStorage.getItem("ai-explanations");
+
+        if (storedExplanations) {
+            const parsed = JSON.parse(storedExplanations);
+            setExplanations(parsed);
+            setStatus("complete");
+            setShouldGenerate(false);
+            return;
+        }
+
+        if (!allow || stockFishError || stockFishError?.length > 0 || !shouldGenerate) {
+            console.log("NO EXPLANATIONS GENERATED (1)", stockFishError, allow, shouldGenerate);
             setStatus("idle");
             setError(null);
             return;
         }
 
         if (!analysisComplete) {
+            console.log("NO EXPLANATIONS GENERATED (2)", analysisComplete);
             return;
         }
 
         if (moveAnalysis.length === 0) {
+            console.log("NO EXPLANATIONS GENERATED (3)", moveAnalysis.length);
             return;
         }
 

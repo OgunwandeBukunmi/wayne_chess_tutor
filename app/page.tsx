@@ -77,6 +77,13 @@ export default function ChessOCRPage() {
     }
 
     function continueToAnalysis() {
+        sessionStorage.removeItem("chess-game");
+        sessionStorage.removeItem("player-color");
+        sessionStorage.removeItem("game-move-analysis");
+        sessionStorage.removeItem("game-analysis");
+        sessionStorage.removeItem("ai-explanations");
+        sessionStorage.removeItem("game-stats");
+
         const moves = movesText
             .replace(/\d+\.\s*/g, "")
             .trim()
@@ -85,8 +92,8 @@ export default function ChessOCRPage() {
 
         if (!moves.length) return;
         // console.log(moves)
-        localStorage.setItem("chess-game", JSON.stringify(moves));
-        localStorage.setItem("player-color", playerColor);
+        sessionStorage.setItem("chess-game", JSON.stringify(moves));
+        sessionStorage.setItem("player-color", playerColor);
         router.push("/game");
     }
 

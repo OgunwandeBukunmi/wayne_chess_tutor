@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -58,6 +59,7 @@ type MoveStats = {
 type Props = {
   moves: string[];
   playerColor: "w" | "b";
+  enabled: boolean;
 };
 
 function parseEvaluation(line: string): Evaluation | null {
@@ -161,7 +163,6 @@ function getMoveColor(step: number): "w" | "b" {
   return step % 2 === 0 ? "w" : "b";
 }
 
-
 function getBestMoveSAN(
   fen: string,
   bestMove: string
@@ -171,6 +172,7 @@ function getBestMoveSAN(
 
     const from = bestMove.slice(0, 2);
     const to = bestMove.slice(2, 4);
+
     const promotion = bestMove[4] as
       | "q"
       | "r"
@@ -208,20 +210,10 @@ function classifyMove(
   const playedBestMove =
     actualMove === bestMoveSAN;
 
-  /*
-    If the player played Stockfish's best move,
-    it cannot be an inaccuracy, mistake, blunder
-    or miss.
-  */
   if (playedBestMove) {
     return "best";
   }
 
-  /*
-    A small evaluation loss with a different move
-    means the player missed Stockfish's preferred
-    opportunity, but did not seriously damage the position.
-  */
   if (evaluationLoss < 0.50) {
     return "miss";
   }
@@ -277,6 +269,45 @@ function flipEvaluation(
   };
 }
 
+function calculateStats(
+  moveAnalysis: MoveAnalysis[]
+): MoveStats {
+  if (moveAnalysis.length === 0) {
+    return {
+      averageGrade: 0,
+      best: 0,
+      good: 0,
+      inaccuracy: 0,
+      mistake: 0,
+      blunder: 0,
+      miss: 0,
+    };
+  }
+
+  const stats: MoveStats = {
+    averageGrade: 0,
+    best: 0,
+    good: 0,
+    inaccuracy: 0,
+    mistake: 0,
+    blunder: 0,
+    miss: 0,
+  };
+
+  let totalGrade = 0;
+
+  for (const move of moveAnalysis) {
+    totalGrade += move.grade;
+    stats[move.classification]++;
+  }
+
+  stats.averageGrade = Math.round(
+    totalGrade / moveAnalysis.length
+  );
+
+  return stats;
+}
+
 function analyzeMoves(
   analysis: PositionAnalysis[],
   moves: string[]
@@ -296,12 +327,16 @@ function analyzeMoves(
     const beforeEvaluation =
       moveColor === "w"
         ? before.whitePerspectiveEvaluation
-        : flipEvaluation(before.whitePerspectiveEvaluation);
+        : flipEvaluation(
+          before.whitePerspectiveEvaluation
+        );
 
     const afterEvaluation =
       moveColor === "w"
         ? after.whitePerspectiveEvaluation
-        : flipEvaluation(after.whitePerspectiveEvaluation);
+        : flipEvaluation(
+          after.whitePerspectiveEvaluation
+        );
 
     const evaluationLoss =
       calculateEvaluationLoss(
@@ -337,62 +372,100 @@ function analyzeMoves(
   return results;
 }
 
-function calculateStats(
-  moveAnalysis: MoveAnalysis[]
-): MoveStats {
-  if (moveAnalysis.length === 0) {
-    return {
-      averageGrade: 0,
-      best: 0,
-      good: 0,
-      inaccuracy: 0,
-      mistake: 0,
-      blunder: 0,
-      miss: 0,
-    };
-  }
-
-  const stats: MoveStats = {
-    averageGrade: 0,
-    best: 0,
-    good: 0,
-    inaccuracy: 0,
-    mistake: 0,
-    blunder: 0,
-    miss: 0,
-  };
-
-  let totalGrade = 0;
-
-  for (const move of moveAnalysis) {
-    totalGrade += move.grade;
-
-    stats[move.classification]++;
-  }
-
-  stats.averageGrade = Math.round(
-    totalGrade / moveAnalysis.length
-  );
-
-  return stats;
-}
-
 export default function useChessAnalysis({
   moves,
   playerColor,
+  enabled,
 }: Props) {
   const workerRef =
     useRef<Worker | null>(null);
 
   const [status, setStatus] = useState(
-    "Loading Stockfish..."
+    enabled
+      ? "Loading Stockfish..."
+      : "Idle"
   );
-  const [error, setError] = useState<string | null>(null);
+
+  const [shouldAnalyze, setShouldAnalyze] =
+    useState(false);
+
+  const [error, setError] =
+    useState<string | null>(null);
 
   const [analysis, setAnalysis] =
     useState<PositionAnalysis[]>([]);
 
+  /*
+    Load cached Stockfish analysis.
+
+    This hook owns the persistence of:
+    game-analysis
+  */
   useEffect(() => {
+    if (!enabled) {
+      setStatus("Idle");
+      return;
+    }
+
+    const cachedAnalysis =
+      sessionStorage.getItem(
+        "game-analysis"
+      );
+
+    if (cachedAnalysis) {
+      try {
+        const parsedAnalysis =
+          JSON.parse(
+            cachedAnalysis
+          ) as PositionAnalysis[];
+
+        setAnalysis(parsedAnalysis);
+        setStatus("Analysis complete");
+        setShouldAnalyze(false);
+        return;
+      } catch {
+        sessionStorage.removeItem(
+          "game-analysis"
+        );
+      }
+    }
+
+    setShouldAnalyze(true);
+  }, [enabled]);
+
+  /*
+    Save Stockfish analysis.
+
+    moveAnalysis does not need to be saved because
+    it is derived from analysis + moves.
+  */
+  useEffect(() => {
+    if (
+      status !== "Analysis complete" ||
+      analysis.length === 0
+    ) {
+      return;
+    }
+
+    sessionStorage.setItem(
+      "game-analysis",
+      JSON.stringify(analysis)
+    );
+  }, [status, analysis]);
+
+  /*
+    Run Stockfish only when there is no cached
+    analysis.
+  */
+  useEffect(() => {
+    if (
+      !enabled ||
+      moves.length === 0 ||
+      !shouldAnalyze
+    ) {
+      return;
+    }
+
     const worker = new Worker(
       "/stockfish/stockfish-19-lite-single.js"
     );
@@ -404,8 +477,8 @@ export default function useChessAnalysis({
     let currentAnalysisStep = 0;
     let currentFen = "";
 
-    let currentEvaluation: Evaluation | null =
-      null;
+    let currentEvaluation:
+      Evaluation | null = null;
 
     let currentWhitePerspectiveEvaluation:
       Evaluation | null = null;
@@ -416,7 +489,10 @@ export default function useChessAnalysis({
     worker.onmessage = (event) => {
       const line = event.data;
 
-      console.log("STOCKFISH:", line);
+      console.log(
+        "STOCKFISH:",
+        line
+      );
 
       if (line === "uciok") {
         worker.postMessage("isready");
@@ -430,7 +506,9 @@ export default function useChessAnalysis({
         currentPlayerPerspectiveEvaluation =
           null;
 
-        setStatus("Analyzing game...");
+        setStatus(
+          "Analyzing game..."
+        );
 
         analyzeNextPosition();
 
@@ -441,7 +519,8 @@ export default function useChessAnalysis({
         parseEvaluation(line);
 
       if (evaluation) {
-        currentEvaluation = evaluation;
+        currentEvaluation =
+          evaluation;
 
         currentWhitePerspectiveEvaluation =
           getWhitePerspectiveEvaluation(
@@ -456,9 +535,10 @@ export default function useChessAnalysis({
           );
       }
 
-      const bestMoveMatch = line.match(
-        /^bestmove\s+(\S+)/
-      );
+      const bestMoveMatch =
+        line.match(
+          /^bestmove\s+(\S+)/
+        );
 
       if (bestMoveMatch) {
         const bestMove =
@@ -495,15 +575,23 @@ export default function useChessAnalysis({
             results
           );
 
-          setAnalysis([...results]);
-          setStatus("Analysis complete");
+          setAnalysis([
+            ...results,
+          ]);
+
+          setShouldAnalyze(false);
+          setStatus(
+            "Analysis complete"
+          );
         }
       }
     };
 
     function analyzeNextPosition() {
       currentFen =
-        getPosition(currentAnalysisStep);
+        getPosition(
+          currentAnalysisStep
+        );
 
       console.log(
         `Analyzing step ${currentAnalysisStep}`,
@@ -519,32 +607,54 @@ export default function useChessAnalysis({
       );
     }
 
-    function getPosition(step: number) {
+    function getPosition(
+      step: number
+    ) {
       const game = new Chess();
 
-      for (let i = 0; i < step; i++) {
+      for (
+        let i = 0;
+        i < step;
+        i++
+      ) {
         try {
           game.move(moves[i]);
         } catch {
-          console.log("Invalid move:", moves[i]);
-          setStatus("Invalid move");
-          setError(`Invalid move: ${moves[i]}`);
-          break
-        }
+          console.log(
+            "Invalid move:",
+            moves[i]
+          );
 
+          setStatus(
+            "Invalid move"
+          );
+
+          setError(
+            `Invalid move: ${moves[i]}`
+          );
+
+          break;
+        }
       }
 
       return game.fen();
     }
 
-    worker.onerror = (error: any) => {
+    worker.onerror = (
+      workerError: ErrorEvent
+    ) => {
       console.error(
         "Stockfish worker error:",
-        error
+        workerError
       );
 
-      setStatus("Stockfish error");
-      setError(error.message);
+      setStatus(
+        "Stockfish error"
+      );
+
+      setError(
+        workerError.message
+      );
     };
 
     worker.postMessage("uci");
@@ -552,17 +662,36 @@ export default function useChessAnalysis({
     return () => {
       worker.postMessage("quit");
       worker.terminate();
-    };
-  }, [moves, playerColor]);
 
+      workerRef.current = null;
+    };
+  }, [
+    moves,
+    playerColor,
+    enabled,
+    shouldAnalyze,
+  ]);
+
+  /*
+    moveAnalysis is derived data.
+
+    It does not need its own state.
+    It is calculated from the Stockfish analysis
+    and the original moves.
+  */
   const moveAnalysis =
     analyzeMoves(
       analysis,
-      moves,
+      moves
     );
 
+  /*
+    Stats are also derived data.
+  */
   const stats =
-    calculateStats(moveAnalysis);
+    calculateStats(
+      moveAnalysis
+    );
 
   return {
     analysis,
@@ -572,3 +701,4 @@ export default function useChessAnalysis({
     stockFishError: error,
   };
 }
+

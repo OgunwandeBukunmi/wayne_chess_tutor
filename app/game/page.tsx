@@ -16,21 +16,6 @@ import { basic } from "../fonts";
 import analyzeGame from "../useChessAnalysis";
 import { useMoveExplanations } from "../useMoveExplanation";
 import UseStatusModal from "@/app/useStatusModal";
-import type { PositionAnalysis, MoveAnalysis } from "../useChessAnalysis";
-
-type SavedChessGame = {
-  id: string;
-  moves: string[];
-  playerColor: "w" | "b";
-
-  analysis: PositionAnalysis[];
-  moveAnalysis: MoveAnalysis[];
-
-  explanations: Record<number, string>;
-
-  createdAt: number;
-};
-
 
 export default function Page() {
   const [rawMovesString, setRawMovesString] = useState<string>("[]");
@@ -54,22 +39,19 @@ export default function Page() {
   };
 
   useEffect(() => {
-    const storedGame = localStorage.getItem("chess-game");
-    const playerColor = localStorage.getItem("player-color");
+    const storedGame = sessionStorage.getItem("chess-game");
 
-
-
-    if (!storedGame || !playerColor) return;
+    if (!storedGame) return;
 
     setRawMovesString(storedGame);
 
     try {
-      const parsedPlayerColor = JSON.parse(playerColor)
+      const parsed = JSON.parse(storedGame);
 
-      if (typeof parsedPlayerColor == "string" && parsedPlayerColor == "w") {
-        setPlayer("w")
+      if (Array.isArray(parsed)) {
+        setPlayer("b");
       } else {
-        setPlayer("b")
+        setPlayer(parsed.playerColor ?? "b");
       }
     } catch {
       setRawMovesString("[]");
@@ -98,6 +80,7 @@ export default function Page() {
   } = analyzeGame({
     moves,
     playerColor: player,
+    enabled: true,
   });
 
   const allow = true;
@@ -111,27 +94,6 @@ export default function Page() {
     stockFishError,
     allow
   );
-
-  useEffect(() => {
-    if (explanationStatus != "complete") return;
-
-    const savedGame: SavedChessGame = {
-      id: crypto.randomUUID(),
-      moves,
-      playerColor: player,
-      analysis,
-      moveAnalysis,
-      explanations,
-      createdAt: Date.now(),
-    };
-
-    localStorage.setItem(
-      "chess-analysis",
-      JSON.stringify(savedGame)
-    );
-
-
-  }, [explanationStatus])
 
   function getPosition(step: number) {
     const game = new Chess();
