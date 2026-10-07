@@ -60,7 +60,7 @@ export function useMoveExplanations(
             return;
         }
 
-        if (!allow || stockFishError || stockFishError?.length > 0 || !shouldGenerate) {
+        if (!allow || stockFishError || !shouldGenerate) {
             console.log("NO EXPLANATIONS GENERATED (1)", stockFishError, allow, shouldGenerate);
             setStatus("idle");
             setError(null);
