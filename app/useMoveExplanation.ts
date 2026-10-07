@@ -68,12 +68,10 @@ export function useMoveExplanations(
         }
 
         if (!analysisComplete) {
-            console.log("NO EXPLANATIONS GENERATED (2)", analysisComplete);
             return;
         }
 
         if (moveAnalysis.length === 0) {
-            console.log("NO EXPLANATIONS GENERATED (3)", moveAnalysis.length);
             return;
         }
 
